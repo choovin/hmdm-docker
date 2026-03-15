@@ -20,21 +20,29 @@ if [ ! -z "$LOCAL_IP" ]; then
     fi
 fi
 
-HMDM_WAR="$(basename -- $HMDM_URL)"
+# Check if locally built WAR exists (from Dockerfile.build)
+if [ -f "$TOMCAT_DIR/webapps/ROOT.war" ]; then
+    echo "Using locally built WAR from Dockerfile"
+    # Copy to cache to avoid re-download on restart
+    cp $TOMCAT_DIR/webapps/ROOT.war $CACHE_DIR/hmdm-local.war
+else
+    # Fall back to downloading official WAR
+    HMDM_WAR="$(basename -- $HMDM_URL)"
 
-if [ -f "$CACHE_DIR/$HMDM_WAR" ] && [ "$FORCE_RECONFIGURE" = "true" ]; then
-    rm -f $CACHE_DIR/$HMDM_WAR
-fi
-
-if [ ! -f "$CACHE_DIR/$HMDM_WAR" ]; then
-    if ! wget $DOWNLOAD_CREDENTIALS $HMDM_URL -O $CACHE_DIR/$HMDM_WAR; then
-        echo "Failed to retrieve $HMDM_URL!"
-        exit 1
+    if [ -f "$CACHE_DIR/$HMDM_WAR" ] && [ "$FORCE_RECONFIGURE" = "true" ]; then
+        rm -f $CACHE_DIR/$HMDM_WAR
     fi
-fi
 
-if [ ! -f "$TOMCAT_DIR/webapps/ROOT.war" ] || [ "$FORCE_RECONFIGURE" = "true" ]; then
-    cp $CACHE_DIR/$HMDM_WAR $TOMCAT_DIR/webapps/ROOT.war
+    if [ ! -f "$CACHE_DIR/$HMDM_WAR" ]; then
+        if ! wget $DOWNLOAD_CREDENTIALS $HMDM_URL -O $CACHE_DIR/$HMDM_WAR; then
+            echo "Failed to retrieve $HMDM_URL!"
+            exit 1
+        fi
+    fi
+
+    if [ ! -f "$TOMCAT_DIR/webapps/ROOT.war" ] || [ "$FORCE_RECONFIGURE" = "true" ]; then
+        cp $CACHE_DIR/$HMDM_WAR $TOMCAT_DIR/webapps/ROOT.war
+    fi
 fi
 
 $HMDM_DIR/update-web-app-docker.sh

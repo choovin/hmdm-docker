@@ -1,0 +1,97 @@
+# Headwind MDM 从源码构建
+
+# 阶段1: 构建
+FROM docker.1ms.run/library/maven:3.9-eclipse-temurin-11 AS builder
+
+WORKDIR /build
+
+# 配置国内 Maven 镜像（阿里云）
+RUN mkdir -p /root/.m2 && \
+    cat > /root/.m2/settings.xml << 'EOF'
+<settings>
+  <mirrors>
+    <mirror>
+      <id>aliyunmaven</id>
+      <name>阿里云公共仓库</name>
+      <url>https://maven.aliyun.com/repository/public</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>
+EOF
+
+# 复制源码
+COPY hmdm-server /build/
+
+# 创建 build.properties 文件（构建必需）
+RUN cp /build/server/build.properties.example /build/server/build.properties
+
+# 构建项目
+RUN mvn clean install -DskipTests
+
+# 阶段2: 运行时
+FROM docker.1ms.run/library/tomcat:9-jdk11-temurin-jammy
+
+# 使用国内 Ubuntu 镜像源（清华源）
+RUN sed -i 's|http://ports.ubuntu.com/ubuntu-ports|https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports|g' /etc/apt/sources.list && \
+    sed -i 's|http://archive.ubuntu.com/ubuntu|https://mirrors.tuna.tsinghua.edu.cn/ubuntu|g' /etc/apt/sources.list 2>/dev/null || true
+
+RUN apt-get update \
+	&& apt-get upgrade -y
+RUN apt-get install -y \
+	aapt \
+	wget \
+	sed \
+	postgresql-client \
+	&& rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /usr/local/tomcat/conf/Catalina/localhost
+RUN mkdir -p /usr/local/tomcat/ssl
+
+# 从 builder 复制构建好的 WAR 文件
+COPY --from=builder /build/server/target/*.war /usr/local/tomcat/webapps/ROOT.war
+
+# Set to 1 to force updating the config files
+ENV FORCE_RECONFIGURE=
+
+# Available values: en, ru (en by default)
+ENV INSTALL_LANGUAGE=en
+
+#ENV ADMIN_EMAIL=
+
+# Different for open source and premium versions!
+ENV SHARED_SECRET=changeme-C3z9vi54
+
+ENV HMDM_VARIANT=os
+ENV DOWNLOAD_CREDENTIALS=
+ENV CLIENT_VERSION=6.31
+
+ENV SQL_HOST=localhost
+ENV SQL_PORT=5432
+ENV SQL_BASE=hmdm
+ENV SQL_USER=hmdm
+ENV SQL_PASS=Ch@nGeMe
+
+ENV PROTOCOL=https
+#ENV BASE_DOMAIN=your-domain.com
+
+# Set this parameter to your local IP address
+# if your server is behind the NAT
+#ENV LOCAL_IP=172.31.91.82
+
+# Comment it to use custom certificates
+ENV HTTPS_LETSENCRYPT=true
+ENV HTTPS_CERT=cert.pem
+ENV HTTPS_FULLCHAIN=fullchain.pem
+ENV HTTPS_PRIVKEY=privkey.pem
+
+EXPOSE 8080
+EXPOSE 8443
+EXPOSE 31000
+
+# 从构建上下文复制启动脚本和配置
+COPY hmdm-docker/docker-entrypoint.sh /
+COPY hmdm-docker/update-web-app-docker.sh /opt/hmdm/
+COPY hmdm-docker/tomcat_conf/server.xml /usr/local/tomcat/conf/server.xml
+ADD hmdm-docker/templates /opt/hmdm/templates/
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

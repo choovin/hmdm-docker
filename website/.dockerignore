@@ -1,0 +1,46 @@
+# 依赖目录
+node_modules
+.pnpm-store
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# 构建产物
+.next
+dist
+build
+*.tsbuildinfo
+
+# 测试文件
+__tests__
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+coverage
+
+# 日志
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 文档
+README.md
+LICENSE
+*.md
+
+# 其他
+.DS_Store
+Thumbs.db

@@ -2,7 +2,14 @@ version: '3'
 
 services:
 
-  # 本地开发环境：禁用 certbot，使用 HTTP 模式
+  # 云服务器部署配置：使用 HTTPS + Certbot
+  certbot:
+    image: certbot/certbot:v1.4.0
+    volumes:
+      - ./volumes/letsencrypt:/etc/letsencrypt
+    ports:
+      - 80:80
+    entrypoint: "certbot certonly --non-interactive --agree-tos -m ${ADMIN_EMAIL} --standalone -d ${BASE_DOMAIN}"
 
   postgresql:
     image: postgres:12-alpine
@@ -18,8 +25,8 @@ services:
   hmdm:
     image: headwindmdm/hmdm:0.1.7
     ports:
-      # HTTP 模式：使用 8080 端口
-      - 8080:8080
+      # HTTPS 模式：使用 443
+      - 443:8443
       - 31000:31000
     volumes:
       - ./volumes/work:/usr/local/tomcat/work
