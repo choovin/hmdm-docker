@@ -5,7 +5,7 @@ FROM docker.1ms.run/library/maven:3.9-eclipse-temurin-11 AS builder
 
 WORKDIR /build
 
-# 配置国内 Maven 镜像（阿里云）
+# 配置阿里云 Maven 镜像和 Node.js 国内镜像
 RUN mkdir -p /root/.m2 && \
     cat > /root/.m2/settings.xml << 'EOF'
 <settings>
@@ -20,30 +20,38 @@ RUN mkdir -p /root/.m2 && \
 </settings>
 EOF
 
+# 配置 Git 使用镜像访问 GitHub（解决国内访问 GitHub 问题）
+RUN git config --global url."https://ghproxy.com/https://github.com/".insteadOf "https://github.com/" && \
+    git config --global url."https://ghproxy.com/https://github.com/".insteadOf "git://github.com/"
+
+# 设置 Node.js 国内镜像（frontend-maven-plugin 使用）
+ENV NODE_DOWNLOAD_ROOT=https://cdn.npmmirror.com/binaries/node/
+# npm 使用官方源（npmmirror 的 npm 镜像路径不稳定）
+
 # 复制源码
 COPY hmdm-server /build/
 
 # 创建 build.properties 文件（构建必需）
 RUN cp /build/server/build.properties.example /build/server/build.properties
 
-# 构建项目
+# 构建项目（使用阿里云镜像和国内 Node.js 镜像）
 RUN mvn clean install -DskipTests
 
 # 阶段2: 运行时
 FROM docker.1ms.run/library/tomcat:9-jdk11-temurin-jammy
 
-# 使用国内 Ubuntu 镜像源（清华源）
+# 使用清华镜像源加速 APT
 RUN sed -i 's|http://ports.ubuntu.com/ubuntu-ports|https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports|g' /etc/apt/sources.list && \
-    sed -i 's|http://archive.ubuntu.com/ubuntu|https://mirrors.tuna.tsinghua.edu.cn/ubuntu|g' /etc/apt/sources.list 2>/dev/null || true
+    sed -i 's|http://archive.ubuntu.com/ubuntu|https://mirrors.tuna.tsinghua.edu.cn/ubuntu|g' /etc/apt/sources.list
 
 RUN apt-get update \
-	&& apt-get upgrade -y
+  && apt-get upgrade -y
 RUN apt-get install -y \
-	aapt \
-	wget \
-	sed \
-	postgresql-client \
-	&& rm -rf /var/lib/apt/lists/*
+  aapt \
+  wget \
+  sed \
+  postgresql-client \
+  && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /usr/local/tomcat/conf/Catalina/localhost
 RUN mkdir -p /usr/local/tomcat/ssl
 

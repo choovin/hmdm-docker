@@ -6,6 +6,15 @@ import { useState } from 'react';
 
 const resources = [
   {
+    id: 0,
+    title: 'Runnode MDM Launcher',
+    description: '设备管理客户端，用于研学设备的统一管理和监控，支持远程控制、应用分发、位置追踪等功能',
+    pages: 'v6.31',
+    format: 'APK',
+    category: '设备管理',
+    downloadUrl: '/runnode-mdm-launcher-v6.31.apk',
+  },
+  {
     id: 1,
     title: '2026 AI 研学行业发展白皮书',
     description: '全面分析AI在研学教育领域的应用现状与发展趋势，涵盖市场数据、技术方案、典型案例等内容',
@@ -52,6 +61,17 @@ export default function ResourcesPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleDownload = (resource: typeof resources[0]) => {
+    // 如果是 APK 文件，直接下载
+    if (resource.format === 'APK' && resource.downloadUrl) {
+      const link = document.createElement('a');
+      link.href = resource.downloadUrl;
+      link.download = resource.downloadUrl.split('/').pop() || '';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+    // 其他资源显示表单
     setDownloadForm({ isOpen: true, resource });
   };
 
@@ -152,16 +172,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 
                     {/* Actions */}
                     <div className="flex gap-3">
-                      <button className="flex items-center gap-1 text-sm text-[var(--color-silver-dark)] hover:text-white transition-colors">
-                        <Eye className="w-4 h-4" />
-                        预览
-                      </button>
+                      {resource.format !== 'APK' && (
+                        <button className="flex items-center gap-1 text-sm text-[var(--color-silver-dark)] hover:text-white transition-colors">
+                          <Eye className="w-4 h-4" />
+                          预览
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDownload(resource)}
                         className="flex items-center gap-1 text-sm text-[var(--color-neon-cyan)] hover:text-white transition-colors"
                       >
                         <Download className="w-4 h-4" />
-                        下载
+                        {resource.format === 'APK' ? '立即下载' : '下载'}
                       </button>
                     </div>
                   </div>

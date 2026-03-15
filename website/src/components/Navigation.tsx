@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Brain, LayoutDashboard, Download, Sparkles, ChevronDown } from 'lucide-react';
+import { Menu, X, Brain, LayoutDashboard, Download, Sparkles, ChevronDown, QrCode } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import QRCode from 'qrcode';
 
 const navItems = [
   { name: '首页', href: '/' },
@@ -18,6 +19,7 @@ const navItems = [
 
 const quickLinks = [
   { name: '管理后台', href: 'http://192.168.0.181:3100', icon: LayoutDashboard, external: true },
+  { name: 'DMS管理', href: 'https://dmd.runnode.cn', icon: LayoutDashboard, external: true },
   { name: 'AI创作', href: 'http://192.168.0.181:2026', icon: Sparkles, external: true },
   { name: 'App下载', href: '#download', icon: Download, external: false },
 ];
@@ -27,7 +29,27 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [quickLinksOpen, setQuickLinksOpen] = useState(false);
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Generate QR code when modal opens
+  useEffect(() => {
+    if (downloadModalOpen) {
+      const apkUrl = 'https://yanxue.runnode.cn/runnode-mdm-launcher-v6.31.apk';
+      QRCode.toDataURL(apkUrl, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#00d4ff',
+          light: '#ffffff',
+        },
+      }).then(url => {
+        setQrCodeDataUrl(url);
+      }).catch(err => {
+        console.error('QR Code generation failed:', err);
+      });
+    }
+  }, [downloadModalOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -207,7 +229,7 @@ export default function Navigation() {
               className="glass-card w-full max-w-md p-8"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <div className="w-16 h-16 rounded-full bg-[var(--color-neon-cyan)]/20 flex items-center justify-center mx-auto mb-4">
                   <Download className="w-8 h-8 text-[var(--color-neon-cyan)]" />
                 </div>
@@ -215,9 +237,30 @@ export default function Navigation() {
                 <p className="text-[var(--color-silver-dark)]">选择您的设备类型下载安装</p>
               </div>
 
+              {/* QR Code Section */}
+              {qrCodeDataUrl && (
+                <div className="mb-6 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)]">
+                  <div className="flex items-center gap-2 mb-3 justify-center">
+                    <QrCode className="w-4 h-4 text-[var(--color-neon-cyan)]" />
+                    <span className="text-sm text-[var(--color-silver-dark)]">扫码直接下载</span>
+                  </div>
+                  <div className="flex justify-center">
+                    <img
+                      src={qrCodeDataUrl}
+                      alt="下载二维码"
+                      className="w-40 h-40 rounded-lg"
+                    />
+                  </div>
+                  <p className="text-xs text-[var(--color-silver-dark)] text-center mt-2">
+                    使用 Pad 扫描二维码安装
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-4">
                 <a
-                  href="#"
+                  href="https://yanxue.runnode.cn/runnode-mdm-launcher-v6.31.apk"
+                  download
                   className="flex items-center gap-4 p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-[var(--glass-border)] hover:border-[var(--color-neon-cyan)] transition-all group"
                 >
                   <div className="w-12 h-12 rounded-lg bg-[var(--color-tech-purple)]/20 flex items-center justify-center">
@@ -226,11 +269,11 @@ export default function Navigation() {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <div className="text-white font-medium group-hover:text-[var(--color-neon-cyan)] transition-colors">Android 版本</div>
-                    <div className="text-sm text-[var(--color-silver-dark)]">适用于 Android 8.0 及以上</div>
+                    <div className="text-white font-medium group-hover:text-[var(--color-neon-cyan)] transition-colors">MDM Launcher</div>
+                    <div className="text-sm text-[var(--color-silver-dark)]">设备管理客户端 v6.31</div>
                   </div>
                   <svg className="w-5 h-5 text-[var(--color-silver-dark)] group-hover:text-[var(--color-neon-cyan)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                 </a>
 
