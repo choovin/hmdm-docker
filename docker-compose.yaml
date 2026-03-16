@@ -5,9 +5,11 @@ services:
   # 本地开发环境：禁用 certbot，使用 HTTP 模式
 
   postgresql:
-    image: postgres:12-alpine
+    # 使用本地可用的镜像
+    image: docker.1ms.run/library/postgres:14-alpine
     ports:
-      - 5432:5432
+      # 使用 5433 端口避免与本地 PostgreSQL 冲突
+      - 5433:5432
     environment:
       POSTGRES_USER: ${SQL_USER}
       POSTGRES_PASSWORD: ${SQL_PASS}
@@ -16,10 +18,11 @@ services:
       - ./volumes/db:/var/lib/postgresql/data
 
   hmdm:
-    image: headwindmdm/hmdm:0.1.7
+    # 使用本地构建的镜像（包含中文界面和现代化UI）
+    image: registry.cn-shenzhen.aliyuncs.com/sailfish/yanxue:yanxue-hmdm-server-v5.38.1
     ports:
-      # HTTP 模式：使用 8080 端口
-      - 8080:8080
+      # HTTP 模式：使用 8081 端口（8080 已被占用）
+      - 8081:8080
       - 31000:31000
     volumes:
       - ./volumes/work:/usr/local/tomcat/work
