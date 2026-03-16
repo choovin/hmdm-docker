@@ -48,7 +48,7 @@ services:
     build:
       context: ./website
       dockerfile: Dockerfile
-    image: registry.cn-shenzhen.aliyuncs.com/sailfish/yanxue:yanxue-website
+    image: registry.cn-shenzhen.aliyuncs.com/sailfish/yanxue:yanxue-website-v0.0.2
     container_name: yanxue-website
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:8001
