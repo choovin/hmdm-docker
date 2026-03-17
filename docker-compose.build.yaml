@@ -17,7 +17,7 @@ services:
     build:
       context: ../
       dockerfile: hmdm-docker/Dockerfile.build
-    image: registry.cn-shenzhen.aliyuncs.com/sailfish/yanxue:yanxue-hmdm-server-v5.38.1
+    image: registry.cn-shenzhen.aliyuncs.com/sailfish/yanxue:yanxue-hmdm-server-v5.38.2
     container_name: yanxue-hmdm-server
     ports:
       - "0.0.0.0:8081:8080"
