@@ -3,9 +3,9 @@
 services:
 
   postgresql:
-    image: postgres:12-alpine
+    image: docker.1ms.run/library/postgres:14-alpine
     ports:
-      - 5432:5432
+      - 5433:5432
     environment:
       POSTGRES_USER: ${SQL_USER}
       POSTGRES_PASSWORD: ${SQL_PASS}
@@ -20,8 +20,8 @@ services:
     image: registry.cn-shenzhen.aliyuncs.com/sailfish/yanxue:yanxue-hmdm-server-v5.38.1
     container_name: yanxue-hmdm-server
     ports:
-      - 8080:8080
-      - 31000:31000
+      - "0.0.0.0:8081:8080"
+      - "0.0.0.0:31000:31000"
     volumes:
       - ./volumes/work:/usr/local/tomcat/work
       - ./volumes/letsencrypt:/etc/letsencrypt
