@@ -13,7 +13,8 @@
     <Parameter name="files.directory" value="/usr/local/tomcat/work/files"/>
 
     <!-- URL used to open Headwind MDM control panel -->
-    <Parameter name="base.url" value="_PROTOCOL_://_BASE_DOMAIN_"/>
+    <!-- Use _BASE_URL_ for full URL control (e.g. https://domain.com while PROTOCOL=http) -->
+    <Parameter name="base.url" value="_BASE_URL_"/>
 
     <!-- private / shared; shared can be used only in Enterprise solution -->
     <Parameter name="usage.scenario" value="private" />
