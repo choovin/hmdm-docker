@@ -19,7 +19,7 @@ services:
 
   hmdm:
     # 使用本地构建的镜像（包含中文界面和现代化UI）
-    image: registry.cn-shenzhen.aliyuncs.com/sailfish/yanxue:yanxue-hmdm-server-v5.38.2
+    image: registry.cn-shenzhen.aliyuncs.com/sailfish/yanxue:yanxue-hmdm-server-v5.38.3
     ports:
       # HTTP 模式：使用 8081 端口（8080 已被占用）
       - 8081:8080
