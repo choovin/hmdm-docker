@@ -17,14 +17,14 @@ services:
     build:
       context: ../
       dockerfile: hmdm-docker/Dockerfile.build
-    image: registry.cn-shenzhen.aliyuncs.com/sailfish/yanxue:yanxue-hmdm-server-v5.38.6
+    image: registry.cn-shenzhen.aliyuncs.com/sailfish/yanxue:yanxue-hmdm-server-v5.38.9
     container_name: yanxue-hmdm-server
     ports:
       - "0.0.0.0:8081:8080"
       - "0.0.0.0:31000:31000"
     volumes:
       - ./volumes/work:/usr/local/tomcat/work
-      - ./volumes/letsencrypt:/etc/letsencrypt
+      # - ./volumes/letsencrypt:/etc/letsencrypt
       - ./volumes/hmdm-config:/usr/local/tomcat/conf/Catalina/localhost
     environment:
       SQL_HOST: postgresql

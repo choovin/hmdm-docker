@@ -21,8 +21,22 @@ RUN mkdir -p /root/.m2 && \
 EOF
 
 # 配置 Git 使用镜像访问 GitHub（解决国内访问 GitHub 问题）
-RUN git config --global url."https://ghproxy.com/https://github.com/".insteadOf "https://github.com/" && \
-    git config --global url."https://ghproxy.com/https://github.com/".insteadOf "git://github.com/"
+# 使用 .gitconfig 文件确保配置被正确读取
+RUN mkdir -p /root && \
+    cat > /root/.gitconfig << 'EOF'
+[url "https://ghfast.top/https://github.com/"]
+    insteadOf = https://github.com/
+    insteadOf = git://github.com/
+    insteadOf = https://raw.githubusercontent.com/
+[http]
+    sslVerify = false
+    postBuffer = 524288000
+    lowSpeedLimit = 0
+    lowSpeedTime = 999999
+EOF
+
+# 验证 git 配置
+RUN git config --list
 
 # 设置 Node.js 国内镜像（frontend-maven-plugin 使用）
 ENV NODE_DOWNLOAD_ROOT=https://cdn.npmmirror.com/binaries/node/
@@ -38,7 +52,7 @@ RUN cp /build/server/build.properties.example /build/server/build.properties
 RUN mvn clean install -DskipTests
 
 # 阶段2: 运行时
-FROM docker.1ms.run/library/tomcat:9-jdk11-temurin-jammy
+FROM local-tomcat:9-jdk11
 
 # 使用清华镜像源加速 APT
 RUN sed -i 's|http://ports.ubuntu.com/ubuntu-ports|https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports|g' /etc/apt/sources.list && \
