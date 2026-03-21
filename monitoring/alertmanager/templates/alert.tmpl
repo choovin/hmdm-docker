@@ -1,0 +1,30 @@
+{{ define "email.to" }}admin@h-mdm.com{{ end }}
+
+{{ define "slack.default.text" }}
+{{ range .Alerts }}
+*Alert:* {{ .Labels.alertname }}
+*Severity:* {{ .Labels.severity }}
+*Cluster:* {{ .Labels.cluster }}
+*Description:* {{ .Annotations.description }}
+{{ end }}
+{{ end }}
+
+{{ define "slack.critical.text" }}
+🚨 *CRITICAL ALERT*
+{{ range .Alerts }}
+*Alert:* {{ .Labels.alertname }}
+*Severity:* {{ .Labels.severity }}
+*Cluster:* {{ .Labels.cluster }}
+*Description:* {{ .Annotations.description }}
+*Details:*
+{{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
+{{ end }}
+{{ end }}
+Immediate action required!
+{{ end }}
+
+{{ define "slack.color" }}
+{{ if eq .Status "firing" }}
+{{ if eq .Labels.severity "critical" }}danger{{ else }}warning{{ end }}
+{{ else }}good{{ end }}
+{{ end }}

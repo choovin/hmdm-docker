@@ -1,0 +1,115 @@
+# PostgreSQL HA with repmgr and pgpool-II
+# This provides automatic failover and connection pooling
+
+version: '3'
+
+services:
+  # PostgreSQL Primary Node
+  postgresql-primary:
+    image: docker.1ms.run/library/postgres:14
+    container_name: hmdm-pg-primary
+    environment:
+      POSTGRES_USER: ${SQL_USER}
+      POSTGRES_PASSWORD: ${SQL_PASS}
+      POSTGRES_DB: ${SQL_BASE}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - ./postgres-primary/pgdata:/var/lib/postgresql/data
+      - ./postgres-primary/conf/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./postgres-primary/conf/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres-ha
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SQL_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL Standby Node 1
+  postgresql-standby1:
+    image: docker.1ms.run/library/postgres:14
+    container_name: hmdm-pg-standby1
+    environment:
+      POSTGRES_USER: ${SQL_USER}
+      POSTGRES_PASSWORD: ${SQL_PASS}
+      POSTGRES_DB: ${SQL_BASE}
+    volumes:
+      - ./postgres-standby1/pgdata:/var/lib/postgresql/data
+      - ./postgres-standby1/conf/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    networks:
+      - postgres-ha
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    depends_on:
+      postgresql-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SQL_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL Standby Node 2
+  postgresql-standby2:
+    image: docker.1ms.run/library/postgres:14
+    container_name: hmdm-pg-standby2
+    environment:
+      POSTGRES_USER: ${SQL_USER}
+      POSTGRES_PASSWORD: ${SQL_PASS}
+      POSTGRES_DB: ${SQL_BASE}
+    volumes:
+      - ./postgres-standby2/pgdata:/var/lib/postgresql/data
+      - ./postgres-standby2/conf/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    networks:
+      - postgres-ha
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    depends_on:
+      postgresql-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SQL_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Pgpool-II for connection pooling and load balancing
+  pgpool:
+    image: hmdm-pgpool:local
+    container_name: hmdm-pgpool
+    ports:
+      - "5433:5432"
+      - "9898:9898"
+    volumes:
+      - ./pgpool-docker/pgpool.conf:/etc/pgpool.conf:ro
+      - ./pgpool-docker/pool_hba.conf:/etc/pool_hba.conf:ro
+      - ./pgpool-docker/pcp.conf:/etc/pcp.conf:ro
+      - ./pgpool-docker/pool_passwd:/etc/pool_passwd:ro
+      - pgpool-run:/var/run/postgresql
+    networks:
+      - postgres-ha
+    depends_on:
+      - postgresql-primary
+      - postgresql-standby1
+      - postgresql-standby2
+    restart: unless-stopped
+
+networks:
+  postgres-ha:
+    driver: bridge
+
+volumes:
+  pgpool-run:

@@ -1,0 +1,35 @@
+# Alertmanager configuration for Headwind MDM
+# Simplified version - notifications need to be configured for production use
+
+global:
+  resolve_timeout: 5m
+
+# Route configuration - how alerts are grouped and routed
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'null'
+
+# Inhibit rules - prevent alert storms
+inhibit_rules:
+  # Don't fire multiple alerts for the same issue
+  - source_match:
+      alertname: 'NodeDown'
+    target_match_re:
+      alertname: 'HighCPUUsage|HighMemoryUsage|DiskSpaceLow'
+    equal: ['instance']
+
+  # Disable warnings if critical is firing
+  - source_match:
+      severity: 'critical'
+    target_match_re:
+      severity: 'warning'
+    equal: ['alertname', 'cluster']
+
+# Receivers - where to send notifications
+receivers:
+  # Null receiver - alerts are collected but no notifications sent
+  # Configure Slack, email, or other receivers for production use
+  - name: 'null'
