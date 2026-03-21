@@ -76,6 +76,8 @@ RUN mkdir -p /usr/local/tomcat/ssl
 
 # 从 builder 复制构建好的 WAR 文件
 COPY --from=builder /build/server/target/*.war /usr/local/tomcat/webapps/ROOT.war
+# 部署 Swagger UI
+COPY --from=builder /build/swagger/ui/target/*.war /usr/local/tomcat/webapps/swagger.war
 
 # Set to 1 to force updating the config files
 ENV FORCE_RECONFIGURE=
