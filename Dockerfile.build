@@ -50,6 +50,8 @@ COPY hmdm-server /build/
 RUN cp /build/server/build.properties.example /build/server/build.properties
 
 # 构建项目（使用阿里云镜像和国内 Node.js 镜像）
+# frontend-maven-plugin 会自动安装 Node.js、运行 npm install 和 grunt resolve
+# grunt resolve 会将 webtarget/lib 中的文件复制到 src/main/webapp/lib
 RUN mvn clean install -DskipTests
 
 # 阶段2: 运行时
