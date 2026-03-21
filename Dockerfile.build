@@ -40,11 +40,8 @@ RUN git config --list
 
 # 设置 Node.js 国内镜像（frontend-maven-plugin 使用）
 ENV NODE_DOWNLOAD_ROOT=https://cdn.npmmirror.com/binaries/node/
-
-# 配置 npm 和 Bower 使用国内镜像
-RUN npm config set registry https://registry.npmmirror.com && \
-    npm config set bower_registry_url https://registry.npmmirror.com && \
-    echo '{"registry":"https://registry.npmmirror.com"}' > /root/.bowerrc
+# 设置 npm 镜像（frontend-maven-plugin 会在运行时使用）
+ENV NPM_CONFIG_REGISTRY=https://registry.npmmirror.com
 
 # 复制源码
 COPY hmdm-server /build/
