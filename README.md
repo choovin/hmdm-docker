@@ -187,6 +187,62 @@ Restarting the container applies the changes. To avoid loss of changes, make sur
 the `FORCE_RECONFIGURE` flag is not set in the `.env` file (this flag forces 
 the container to reset the XML config file to its default state).
 
+## Monitoring Stack
+
+A comprehensive monitoring and alerting stack is available:
+
+```bash
+# Start monitoring (Prometheus + Grafana + Alertmanager)
+docker-compose -f docker-compose.monitoring.yaml up -d
+```
+
+**Services:**
+| Service | Port | Description |
+|---------|------|-------------|
+| Grafana | 3000 | Visualization dashboards (admin/admin123) |
+| Prometheus | 9090 | Metrics collection |
+| Alertmanager | 9093 | Alert routing |
+| Node Exporter | 9100 | System metrics |
+| cAdvisor | 8082 | Container metrics |
+| PostgreSQL Exporter | 9187 | Database metrics |
+| JMX Exporter | 9404 | JVM metrics |
+
+**Dashboards:**
+- JVM metrics (memory, threads, GC)
+- PostgreSQL metrics (connections, transactions, cache hit ratio)
+- System metrics (CPU, memory, disk)
+- Container metrics (resource usage)
+
+**Alerting:**
+- JVM high memory/GC pressure
+- PostgreSQL connection exhaustion, replication lag
+- System disk/memory saturation
+- Container resource limits
+
+---
+
+## PostgreSQL High Availability
+
+A production-grade HA setup with automatic failover:
+
+```bash
+# Start PostgreSQL HA cluster (1 primary + 2 standbys + pgpool-II)
+docker-compose -f docker-compose.postgres-ha.yaml up -d
+```
+
+**Architecture:**
+- 1 Primary node + 2 Standby nodes with streaming replication
+- repmgr for automatic failover
+- pgpool-II for connection pooling and load balancing
+- Target RTO: < 30 seconds, RPO: < 1 minute
+
+**Ports:**
+- Pgpool-II: 5433 (connection pooling)
+- PostgreSQL Primary: 5432
+- PostgreSQL Standbys: 5432
+
+---
+
 ## Using custom SSL certificates in Docker Compose
 
 To use custom SSL certificates
