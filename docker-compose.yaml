@@ -1,35 +1,142 @@
+# Headwind MDM 生产环境部署
+# 包含: HMDM + PostgreSQL HA (1主+2从+pgpool) + 监控栈 (Prometheus/Grafana)
+#
+# 启动命令:
+#   docker-compose up -d          # 完整生产环境
+#   docker-compose ps              # 查看服务状态
+#   docker-compose logs -f hmdm   # 查看日志
+
 version: '3'
 
 services:
 
-  # 本地开发环境：禁用 certbot，使用 HTTP 模式
-
-  postgresql:
-    # 使用本地可用的镜像
-    image: docker.1ms.run/library/postgres:14-alpine
+  #==========================================
+  # PostgreSQL 主库 (Primary)
+  #==========================================
+  postgresql-primary:
+    image: docker.1ms.run/library/postgres:14
+    container_name: hmdm-pg-primary
+    environment:
+      POSTGRES_USER: ${SQL_USER}
+      POSTGRES_PASSWORD: ${SQL_PASS}
+      POSTGRES_DB: ${SQL_BASE}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - ./volumes/pg-primary:/var/lib/postgresql/data
     ports:
-      # 使用 5433 端口避免与本地 PostgreSQL 冲突
-      - 5433:5432
+      - "5432:5432"
+    networks:
+      - hmdm-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SQL_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  #==========================================
+  # PostgreSQL 从库 1 (Standby 1)
+  #==========================================
+  postgresql-standby1:
+    image: docker.1ms.run/library/postgres:14
+    container_name: hmdm-pg-standby1
     environment:
       POSTGRES_USER: ${SQL_USER}
       POSTGRES_PASSWORD: ${SQL_PASS}
       POSTGRES_DB: ${SQL_BASE}
     volumes:
-      - ./volumes/db:/var/lib/postgresql/data
+      - ./volumes/pg-standby1:/var/lib/postgresql/data
+    networks:
+      - hmdm-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    depends_on:
+      postgresql-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SQL_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
-  hmdm:
-    # 使用本地构建的镜像（包含中文界面和现代化UI）
-    image: registry.cn-shenzhen.aliyuncs.com/sailfish/yanxue:yanxue-hmdm-server-v5.38.9
+  #==========================================
+  # PostgreSQL 从库 2 (Standby 2)
+  #==========================================
+  postgresql-standby2:
+    image: docker.1ms.run/library/postgres:14
+    container_name: hmdm-pg-standby2
+    environment:
+      POSTGRES_USER: ${SQL_USER}
+      POSTGRES_PASSWORD: ${SQL_PASS}
+      POSTGRES_DB: ${SQL_BASE}
+    volumes:
+      - ./volumes/pg-standby2:/var/lib/postgresql/data
+    networks:
+      - hmdm-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    depends_on:
+      postgresql-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SQL_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  #==========================================
+  # Pgpool-II (连接池 + 负载均衡)
+  #==========================================
+  pgpool:
+    image: hmdm-pgpool:local
+    container_name: hmdm-pgpool
     ports:
-      # HTTP 模式：使用 8081 端口（8080 已被占用）
-      - 8081:8080
-      - 31000:31000
+      - "5433:5432"
+      - "9898:9898"
+    volumes:
+      - ./pgpool-docker/pgpool.conf:/etc/pgpool.conf:ro
+      - ./pgpool-docker/pool_hba.conf:/etc/pool_hba.conf:ro
+      - ./pgpool-docker/pcp.conf:/etc/pcp.conf:ro
+      - ./pgpool-docker/pool_passwd:/etc/pool_passwd
+      - pgpool-run:/var/run/postgresql
+    networks:
+      - hmdm-network
+    depends_on:
+      - postgresql-primary
+      - postgresql-standby1
+      - postgresql-standby2
+    restart: unless-stopped
+
+  #==========================================
+  # HMDM 服务器 (Tomcat)
+  #==========================================
+  hmdm:
+    image: registry.cn-shenzhen.aliyuncs.com/sailfish/yanxue:yanxue-hmdm-server-v5.38.9
+    container_name: hmdm-server
+    ports:
+      - "8081:8080"
+      - "31000:31000"
     volumes:
       - ./volumes/work:/usr/local/tomcat/work
       - ./volumes/letsencrypt:/etc/letsencrypt
       - ./volumes/hmdm-config:/usr/local/tomcat/conf/Catalina/localhost
     environment:
-      SQL_HOST: postgresql
+      # 使用 pgpool 作为数据库连接 (通过负载均衡)
+      SQL_HOST: pgpool
+      SQL_PORT: 5432
       SQL_USER: ${SQL_USER}
       SQL_BASE: ${SQL_BASE}
       SQL_PASS: ${SQL_PASS}
@@ -43,5 +150,166 @@ services:
       HMDM_URL: ${HMDM_URL}
       CLIENT_VERSION: ${CLIENT_VERSION}
       FORCE_RECONFIGURE: ${FORCE_RECONFIGURE}
+    networks:
+      - hmdm-network
     depends_on:
-      - postgresql
+      pgpool:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+    restart: unless-stopped
+
+  #==========================================
+  # Prometheus (监控指标收集)
+  #==========================================
+  prometheus:
+    image: docker.1ms.run/prom/prometheus:latest
+    container_name: hmdm-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./monitoring/prometheus/alertmanager.yml:/etc/prometheus/alertmanager.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    networks:
+      - hmdm-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+    restart: unless-stopped
+
+  #==========================================
+  # Grafana (监控可视化)
+  #==========================================
+  grafana:
+    image: docker.1ms.run/grafana/grafana:latest
+    container_name: hmdm-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: "http://${BASE_DOMAIN:-localhost}:3000"
+    networks:
+      - hmdm-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    restart: unless-stopped
+
+  #==========================================
+  # Alertmanager (告警管理)
+  #==========================================
+  alertmanager:
+    image: docker.1ms.run/prom/alertmanager:latest
+    container_name: hmdm-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    networks:
+      - hmdm-network
+    restart: unless-stopped
+
+  #==========================================
+  # Node Exporter (主机监控)
+  #==========================================
+  node-exporter:
+    image: docker.1ms.run/prom/node-exporter:latest
+    container_name: hmdm-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - hmdm-network
+    restart: unless-stopped
+
+  #==========================================
+  # cAdvisor (容器监控)
+  #==========================================
+  # cadvisor:
+  #   image: docker.1ms.run/google/cadvisor:latest
+  #   container_name: hmdm-cadvisor
+  #   ports:
+  #     - "8082:8080"
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:ro
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #   networks:
+  #     - hmdm-network
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.5'
+  #         memory: 1G
+  #   restart: unless-stopped
+
+  #==========================================
+  # PostgreSQL Exporter (数据库监控)
+  #==========================================
+  postgres-exporter:
+    image: docker.1ms.run/prometheuscommunity/postgres-exporter:latest
+    container_name: hmdm-postgres-exporter
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${SQL_USER}:${SQL_PASS}@pgpool:5432/${SQL_BASE}?sslmode=disable"
+    networks:
+      - hmdm-network
+    depends_on:
+      pgpool:
+        condition: service_started
+    restart: unless-stopped
+
+#==========================================
+# 网络定义
+#==========================================
+networks:
+  hmdm-network:
+    driver: bridge
+
+#==========================================
+# 持久化卷
+#==========================================
+volumes:
+  pg-primary:
+  pg-standby1:
+  pg-standby2:
+  pgpool-run:
+  prometheus-data:
+  grafana-data:
+  alertmanager-data:

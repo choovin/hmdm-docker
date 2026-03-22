@@ -2,3 +2,7 @@
 volumes/*
 jenkins/
 website/node_modules/
+.claude/
+.agents/
+skills/
+.gstack/
