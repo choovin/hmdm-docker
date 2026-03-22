@@ -18,9 +18,9 @@ const navItems = [
 ];
 
 const quickLinks = [
-  { name: '管理后台', href: 'http://192.168.0.181:3100', icon: LayoutDashboard, external: true },
-  { name: 'DMS管理', href: 'https://dmd.runnode.cn', icon: LayoutDashboard, external: true },
-  { name: 'AI创作', href: 'http://192.168.0.181:2026', icon: Sparkles, external: true },
+  { name: '管理后台', href: 'https://jubensha.qiyukeji.cn/', icon: LayoutDashboard, external: true },
+  { name: 'DMS管理', href: 'https://mdm.runnode.cn/', icon: LayoutDashboard, external: true },
+  { name: 'AI创作', href: 'https://jubensha.qiyukeji.cn/#/agent/index', icon: Sparkles, external: true },
   { name: 'App下载', href: '#download', icon: Download, external: false },
 ];
 

@@ -17,9 +17,9 @@ const footerLinks = {
     { name: '服务条款', href: '/terms' },
   ],
   contact: [
-    { icon: Mail, text: 'contact@yanxue.ai' },
-    { icon: Phone, text: '400-888-8888' },
-    { icon: MapPin, text: '北京市海淀区科技园' },
+    { icon: Mail, text: 'yanxue@runnode.cn' },
+    { icon: Phone, text: '020-28185909' },
+    { icon: MapPin, text: '广州市番禺区广州大学城' },
   ],
 };
 
@@ -103,11 +103,11 @@ export default function Footer() {
 
         <div className="border-t border-[var(--glass-border)] mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-[var(--color-silver-dark)]">
-            © 2026 AI沉浸式研学系统. All rights reserved.
+            © 2026 AI沉浸式研学系统 广州市旗鱼软件科技有限公司研发. All rights reserved.
           </p>
           <div className="flex gap-6">
             <span className="text-sm text-[var(--color-silver-dark)]">
-              京ICP备xxxxxxxx号
+              粤ICP备17148249号
             </span>
           </div>
         </div>

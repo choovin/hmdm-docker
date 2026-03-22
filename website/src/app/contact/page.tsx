@@ -223,7 +223,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <h4 className="text-sm text-[var(--color-silver-dark)]">邮箱</h4>
-                      <p className="text-white">contact@yanxue.ai</p>
+                      <p className="text-white">yanxue@runnode.cn</p>
                     </div>
                   </div>
 
@@ -233,7 +233,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <h4 className="text-sm text-[var(--color-silver-dark)]">电话</h4>
-                      <p className="text-white">400-888-8888</p>
+                      <p className="text-white">020-28185909</p>
                       <p className="text-xs text-[var(--color-silver-dark)]">工作日 9:00-18:00</p>
                     </div>
                   </div>
@@ -244,7 +244,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <h4 className="text-sm text-[var(--color-silver-dark)]">地址</h4>
-                      <p className="text-white">北京市海淀区科技园</p>
+                      <p className="text-white">广州市番禺区广州大学城</p>
                     </div>
                   </div>
                 </div>
