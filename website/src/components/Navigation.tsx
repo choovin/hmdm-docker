@@ -35,12 +35,12 @@ export default function Navigation() {
   // Generate QR code when modal opens
   useEffect(() => {
     if (downloadModalOpen) {
-      const apkUrl = 'https://yanxue.runnode.cn/runnode-mdm-launcher-v6.31.apk';
+      const apkUrl = 'https://yanxue.runnode.cn/runnode-mdm-launcher-v6.39.apk';
       QRCode.toDataURL(apkUrl, {
         width: 200,
         margin: 2,
         color: {
-          dark: '#00d4ff',
+          dark: '#000000',
           light: '#ffffff',
         },
       }).then(url => {
