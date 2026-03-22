@@ -161,7 +161,59 @@ The project documents 10 Enterprise features in Chinese under `knowledge/` direc
 - The source code (`hmdm-server`) is in a sibling directory, not in this repo
 - 严禁修改 docker-compose和Dockerfile这两类文件中的国内加速镜像配置 docker.1ms.run/library/
 
+## 常见问题排查
+
+### 登录页面白屏
+
+1. **清理浏览器缓存**：Ctrl+F5 或使用隐身模式
+2. **检查 AngularJS 模块加载**：打开浏览器控制台查看是否有 `$modal` 或 `$uibModal` 相关错误
+3. **检查 mask.js 加载**：确保 `lib/angular-ui-mask/mask.js` 是浏览器兼容版本（非 CommonJS 版本）
+
+### 登录失败 "无效的用户名或密码"
+
+**密码哈希算法**（重要）：
+```
+MD5(密码).toUpperCase() + Salt → SHA1
+```
+- Salt 值: `5YdSYHyg2U`
+- admin 密码正确哈希: `349242D38ED8667B5C11D2412EBEA4636BD3CA3A`
+- 测试命令: `echo -n "21232F297A57A5A743894A0E4A801FC35YdSYHyg2U" | sha1sum`
+
+**数据库密码更新**:
+```sql
+UPDATE users SET password='349242D38ED8667B5C11D2412EBEA4636BD3CA3A' WHERE login='admin';
+```
+
+### 前端模块加载错误
+
+| 错误关键词 | 解决方案 |
+|-----------|----------|
+| `$modal is not defined` | angular-ui-bootstrap 2.5.6 使用 `$uibModal`，需批量替换 |
+| `mask.js CommonJS require()` | 使用 `dist/mask.js` 替代 `lib/mask.js` |
+
+**批量替换方法**:
+```bash
+find app -name "*.js" -exec grep -l "\$modal" {} \; | while read f; do
+  sed -i 's/\$modal/\$uibModal/g' "$f"
+done
+```
+
+### 数据库连接
+
+- 开发环境 PostgreSQL 端口: 5433
+- Docker 内部连接: 使用服务名如 `postgresql` 或 `pgpool`
+- 查看数据库: `docker exec -it <container> psql -U hmdm -d hmdm`
+
+## 管理后台默认账号密码
+
+- 用户名: `admin`
+- 密码: `admin`
+
 ---
+
+## 管理后台默认账号密码
+admin
+admin
 
 # gstack
 
