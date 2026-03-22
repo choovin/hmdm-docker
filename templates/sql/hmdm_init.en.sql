@@ -1,17 +1,17 @@
-UPDATE userroles SET name='Super-Admin', description='Can sign in as any user. In shared mode, manages corporate accounts' WHERE id=1;
-UPDATE userroles SET name='Admin', description='Full access to the control panel' WHERE id=2;
-UPDATE userroles SET name='User', description='Limited access to the control panel' WHERE id=3;
-UPDATE userroles SET name='Observer', description='Read-only access to the control panel' WHERE id=100;
+UPDATE userroles SET name='超级管理员', description='全能管理者' WHERE id=1;
+UPDATE userroles SET name='管理员', description='为单个客户账户执行管理员功能' WHERE id=2;
+UPDATE userroles SET name='用户', description='单个客户账户的用户' WHERE id=3;
+UPDATE userroles SET name='观察者', description='观察者仔细观察' WHERE id=100;
 
 UPDATE users SET email='_ADMIN_EMAIL_', passwordReset=true, passwordResetToken=md5(random()::text) WHERE id=1;
 
-UPDATE groups SET name='General' WHERE id=1;
+UPDATE groups SET name='通用' WHERE id=1;
 
-UPDATE permissions SET description='Super-administrator functions for the whole system' WHERE id=1;
-UPDATE permissions SET description='Access to system settings' WHERE id=2;
-UPDATE permissions SET description='Access to configurations, applications and files' WHERE id=3;
-UPDATE permissions SET description='Access to devices' WHERE id=4;
-UPDATE permissions SET description='Access to image removal (image plugin)' WHERE id=100;
+UPDATE permissions SET description='超级管理员的全应用功能' WHERE id=1;
+UPDATE permissions SET description='有权访问设置并在菜单中可见' WHERE id=2;
+UPDATE permissions SET description='有权访问配置、应用和文件并在菜单中可见' WHERE id=3;
+UPDATE permissions SET description='有权编辑和添加设备' WHERE id=4;
+UPDATE permissions SET description='访问图像删除功能(image插件)' WHERE id=100;
 
 UPDATE plugins SET name='Images', description='Retrieve images from devices' WHERE id=1;
 

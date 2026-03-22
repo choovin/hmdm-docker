@@ -82,13 +82,28 @@ FILES_TO_DOWNLOAD=$(grep https://h-mdm.com $BASE_DIR/init1.sql | awk '{ print $4
 cat $BASE_DIR/init1.sql | sed "s|https://h-mdm.com|$PROTOCOL://$BASE_DOMAIN|g" > $BASE_DIR/init.sql
 rm $BASE_DIR/init1.sql
 
+# Copy APK files from local templates instead of downloading
 cd $BASE_DIR/files
-for FILE in $FILES_TO_DOWNLOAD; do
-    FILENAME=$(basename $FILE)
-    if [ ! -f "$BASE_DIR/files/$FILENAME" ]; then
-	wget $FILE
-    fi
-done
+if [ -d "$TEMPLATE_DIR/files" ]; then
+    for APK in $TEMPLATE_DIR/files/*.apk; do
+        if [ -f "$APK" ]; then
+            FILENAME=$(basename $APK)
+            if [ ! -f "$BASE_DIR/files/$FILENAME" ]; then
+                echo "Copying $FILENAME from local templates..."
+                cp "$APK" "$BASE_DIR/files/$FILENAME"
+            fi
+        fi
+    done
+else
+    # Fallback to downloading if no local files
+    for FILE in $FILES_TO_DOWNLOAD; do
+        FILENAME=$(basename $FILE)
+        if [ ! -f "$BASE_DIR/files/$FILENAME" ]; then
+            echo "Downloading $FILENAME..."
+            wget $FILE
+        fi
+    done
+fi
 
 # jks is always created from the certificates
 if [ "$PROTOCOL" = "https" ]; then
